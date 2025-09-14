@@ -1,0 +1,31 @@
+import { Repository } from 'typeorm';
+import { MediaContent, MediaType } from './entities/media-content.entity';
+import { MediaPurchase } from './entities/media-purchase.entity';
+import { CreateMediaContentDto } from './dto/create-media-content.dto';
+import { UpdateMediaContentDto } from './dto/update-media-content.dto';
+import { PurchaseMediaContentDto } from './dto/purchase-media-content.dto';
+export declare class MediaContentService {
+    private readonly mediaContentRepository;
+    private readonly mediaPurchaseRepository;
+    constructor(mediaContentRepository: Repository<MediaContent>, mediaPurchaseRepository: Repository<MediaPurchase>);
+    private generateThumbnail;
+    private generateThumbnailFromUrl;
+    create(createMediaContentDto: CreateMediaContentDto, file?: Express.Multer.File, user?: any): Promise<MediaContent>;
+    createMyContent(createMediaContentDto: CreateMediaContentDto, file?: Express.Multer.File, user?: any): Promise<MediaContent>;
+    findAll(query?: any): Promise<MediaContent[]>;
+    findOne(id: number): Promise<MediaContent>;
+    findByJournalist(journalistId: number): Promise<MediaContent[]>;
+    findMyContent(user: any): Promise<MediaContent[]>;
+    update(id: number, updateMediaContentDto: UpdateMediaContentDto, user?: any): Promise<MediaContent>;
+    updateMyContent(id: number, updateMediaContentDto: UpdateMediaContentDto, file?: Express.Multer.File, user?: any): Promise<MediaContent>;
+    remove(id: number, user?: any): Promise<void>;
+    removeMyContent(id: number, user: any): Promise<void>;
+    purchase(id: number, purchaseDto: PurchaseMediaContentDto, user?: any): Promise<MediaPurchase>;
+    getFeaturedContent(): Promise<MediaContent[]>;
+    findFeatured(): Promise<MediaContent[]>;
+    search(query: any): Promise<MediaContent[]>;
+    searchByType(mediaType: MediaType): Promise<MediaContent[]>;
+    searchByPriceRange(minPrice: number, maxPrice: number): Promise<MediaContent[]>;
+    incrementViews(id: number): Promise<void>;
+    updateRating(id: number, newRating: number): Promise<MediaContent>;
+}
