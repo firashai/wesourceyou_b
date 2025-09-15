@@ -82,16 +82,16 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { NestExpressApplication, ExpressAdapter } from '@nestjs/platform-express';
 import { join } from 'path';
-import * as express from 'express';
+import express from 'express';
 
 const server = express();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
-    new (require('@nestjs/platform-express').ExpressAdapter)(server),
+    new ExpressAdapter(server),
   );
 
   // Enable CORS
@@ -109,32 +109,23 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
+  // Pipes & Middleware
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
 
   app.use((error, req, res, next) => {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({
-        message: 'File too large. Maximum size is 100MB.',
-        error: 'FILE_TOO_LARGE'
-      });
+      return res.status(400).json({ message: 'File too large. Maximum size is 100MB.', error: 'FILE_TOO_LARGE' });
     }
     if (error.message === 'Invalid file type') {
-      return res.status(400).json({
-        message: 'Invalid file type. Please upload a supported file format.',
-        error: 'INVALID_FILE_TYPE'
-      });
+      return res.status(400).json({ message: 'Invalid file type. Please upload a supported file format.', error: 'INVALID_FILE_TYPE' });
     }
     next(error);
   });
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
+  // Static assets (⚠️ won’t persist on Vercel, consider S3 instead)
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads/' });
 
+  // Swagger
   const config = new DocumentBuilder()
     .setTitle('WeSourceYou API')
     .setDescription('Mediation platform connecting journalists and media companies worldwide')
