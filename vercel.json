@@ -1,11 +1,17 @@
 {
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "version": 2,
     "functions": {
       "api/index.ts": {
-        "runtime": "vercel-nodejs@4.0.0"
+        "memory": 1024,
+        "maxDuration": 10
       }
     },
     "routes": [
-      { "src": "/(.*)", "dest": "api/index.ts" }
+      {
+        "src": "/(.*)",
+        "dest": "api/index.ts"
+      }
     ]
   }
   
