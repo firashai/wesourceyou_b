@@ -78,21 +78,74 @@
 // bootstrap();
 
 
-import { Server } from "http";
-import { NestFactory } from "@nestjs/core";
-import { ExpressAdapter } from "@nestjs/platform-express";
-import { AppModule } from "./app.module";
-import * as express from "express";
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import * as express from 'express';
 
 const server = express();
 
-async function bootstrap(expressInstance: any): Promise<Server> {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(expressInstance));
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new (require('@nestjs/platform-express').ExpressAdapter)(server),
+  );
+
+  // Enable CORS
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001',
+      'http://localhost:3002',
+      'http://127.0.0.1:3002',
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
+
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+
+  app.use((error, req, res, next) => {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File too large. Maximum size is 100MB.',
+        error: 'FILE_TOO_LARGE'
+      });
+    }
+    if (error.message === 'Invalid file type') {
+      return res.status(400).json({
+        message: 'Invalid file type. Please upload a supported file format.',
+        error: 'INVALID_FILE_TYPE'
+      });
+    }
+    next(error);
+  });
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
+  const config = new DocumentBuilder()
+    .setTitle('WeSourceYou API')
+    .setDescription('Mediation platform connecting journalists and media companies worldwide')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
   await app.init();
-  return app.getHttpAdapter().getInstance();
+  return server;
 }
 
-export const handler = async (req: any, res: any) => {
-  const expressApp = await bootstrap(server);
-  return expressApp(req, res);
-};
+export default bootstrap();
